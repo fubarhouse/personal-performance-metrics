@@ -17,7 +17,6 @@ restricted to keeping all the data in a single spot for manual analysis.
 I am using this utility to push AWS CloudWatch Metrics to my account in order to achieve the following:
 
 - Tracking time spent on specific volunteering responsibilities.
-- Tracking work-based metrics for self-improvement.
 - To facilitate an evidence-based approach to self-improvement.
 - To compare the amount of time spent between very specific responsibilities to optimize time and personal expectations.
 - To uphold myself to specific KPI's.
