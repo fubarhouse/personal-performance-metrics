@@ -64,4 +64,5 @@ go run main.go
 
 MIT, use at your own risk.
 
-Note that CloudWatch metrics do have a cost associated to their usage. Please read the code and undert
+Note that CloudWatch metrics do have a cost associated to their usage. Please read the code and understand the costs
+of what is being created in your account before you decide to use this.
