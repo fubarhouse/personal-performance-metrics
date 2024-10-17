@@ -47,8 +47,8 @@ Matching up the data to the defined data set above, you can now identify the met
 AWS account before pushing them.
 
 ```yaml
-steps: 0
-calories: 0
+steps: 1
+calories: 0.5
 your-metric-here: 100
 ```
 

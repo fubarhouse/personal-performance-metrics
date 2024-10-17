@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -25,7 +26,7 @@ type Config struct {
 }
 
 // PerformanceData is the data being captured and sent to AWS.
-type PerformanceData map[string]int
+type PerformanceData map[string]float64
 
 // run will execute the main logic component for error handling.
 func run() error {
@@ -69,7 +70,6 @@ func run() error {
 		return err
 	}
 
-	fmt.Println("Metrics published successfully!")
 	return nil
 }
 
@@ -97,7 +97,10 @@ func loadData(filename string) (PerformanceData, error) {
 
 // publishMetrics will publish the metrics to the nominated AWS account.
 func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Config) error {
-	fmt.Printf("Metrics: %v\n", data)
+	fmt.Println("Metrics:")
+	for key, val := range data {
+		fmt.Printf("  %s: %.2f\n", key, math.Round(val*10)/10)
+	}
 
 	// Do not publish until we're ready.
 	if config.SkipPublish {
@@ -113,9 +116,11 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 			continue
 		}
 
+		metricValue := math.Round(value*10) / 10
+
 		metricData = append(metricData, types.MetricDatum{
 			MetricName: aws.String(metricName),
-			Value:      aws.Float64(float64(value)),
+			Value:      aws.Float64(metricValue),
 			Timestamp:  aws.Time(time.Now()),
 			Unit:       types.StandardUnitCount,
 		})
@@ -127,7 +132,12 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 	}
 
 	_, err := client.PutMetricData(context.TODO(), input)
-	return err
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Metrics published successfully!")
+	return nil
 }
 
 func main() {
