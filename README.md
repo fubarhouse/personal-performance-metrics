@@ -47,7 +47,7 @@ skipPublish: false
 metricMappings:
   steps: DailySteps
   calories: CaloriesBurned
-  your-metric-here: MyCustomMetricDesctiption
+  your-metric-here: MyCustomMetricName
 ```
 
 ### Set up the data file
