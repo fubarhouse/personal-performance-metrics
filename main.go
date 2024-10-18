@@ -32,9 +32,10 @@ type Config struct {
 type PerformanceData map[string]float64
 
 var (
-	cliRegion      = kingpin.Flag("region", "AWS Region to push metrics").Envar("AWS_REGION").String()
-	cliProfile     = kingpin.Flag("profile", "Configured AWS profile to use").Envar("AWS_PROFILE").String()
-	cliSkipPublish = kingpin.Flag("skip-publish", "Skip publishing metrics").Default("false").Bool()
+	cliRegion         = kingpin.Flag("region", "AWS Region to push metrics").Envar("AWS_REGION").String()
+	cliProfile        = kingpin.Flag("profile", "Configured AWS profile to use").Envar("AWS_PROFILE").String()
+	cliSkipPublish    = kingpin.Flag("skip-publish", "Skip publishing metrics").Default("false").Bool()
+	cliNoninteractive = kingpin.Flag("non-interactive", "Perform work without interactions").Default("false").Bool()
 )
 
 // run will execute the main logic component for error handling.
@@ -130,7 +131,7 @@ func printTable(data PerformanceData, config Config) error {
 	}
 
 	for key, val := range data {
-		tableData = append(tableData, []string{config.MetricMappings[key], fmt.Sprint(math.Round(val*10) / 10)})
+		tableData = append(tableData, []string{config.MetricMappings[key], fmt.Sprint(math.Round(val*100) / 100)})
 	}
 
 	fmt.Println("Metrics to be published:")
@@ -158,7 +159,7 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 			continue
 		}
 
-		metricValue := math.Round(value*10) / 10
+		metricValue := math.Round(value*100) / 100
 
 		metricData = append(metricData, types.MetricDatum{
 			MetricName: aws.String(metricName),
@@ -173,7 +174,7 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 		MetricData: metricData,
 	}
 
-	if confirm("Do you want to proceed?") {
+	if *cliNoninteractive || confirm("Do you want to proceed?") {
 		_, err = client.PutMetricData(context.TODO(), input)
 		if err != nil {
 			return err
