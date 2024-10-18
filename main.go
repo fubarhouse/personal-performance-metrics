@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/pterm/pterm"
 	"log"
 	"math"
 	"os"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"gopkg.in/yaml.v2"
 )
 
 // Config provides global configuration
@@ -28,12 +29,36 @@ type Config struct {
 // PerformanceData is the data being captured and sent to AWS.
 type PerformanceData map[string]float64
 
+var (
+	cliRegion      = kingpin.Flag("region", "AWS Region to push metrics").Envar("AWS_REGION").String()
+	cliProfile     = kingpin.Flag("profile", "Configured AWS profile to use").Envar("AWS_PROFILE").String()
+	cliSkipPublish = kingpin.Flag("skip-publish", "Skip publishing metrics").Default("false").Bool()
+)
+
 // run will execute the main logic component for error handling.
 func run() error {
 
 	configInput, err := loadConfig("config.yml")
 	if err != nil {
 		return err
+	}
+
+	if configInput.Region == "" {
+		configInput.Region = *cliRegion
+		if configInput.Region == "" {
+			return fmt.Errorf("AWS_REGION environment variable not set")
+		}
+	}
+
+	if configInput.Profile == "" {
+		configInput.Profile = *cliProfile
+		if configInput.Profile == "" {
+			return fmt.Errorf("AWS_PROFILE environment variable not set")
+		}
+	}
+
+	if *cliSkipPublish {
+		configInput.SkipPublish = true
 	}
 
 	dataInput, err := loadData("data.yml")
@@ -95,16 +120,31 @@ func loadData(filename string) (PerformanceData, error) {
 	return data, err
 }
 
+// printTable will print a table showing all of the metrics which are going to be pushed.
+func printTable(data PerformanceData, config Config) error {
+	alternateStyle := pterm.NewStyle(pterm.BgDarkGray)
+	tableData := pterm.TableData{
+		{"Metric name", "Value"},
+	}
+
+	for key, val := range data {
+		tableData = append(tableData, []string{config.MetricMappings[key], fmt.Sprint(math.Round(val*10) / 10)})
+	}
+
+	fmt.Println("Metrics to be published:")
+	return pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(tableData).WithStyle(alternateStyle).Render()
+}
+
 // publishMetrics will publish the metrics to the nominated AWS account.
 func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Config) error {
-	fmt.Println("Metrics:")
-	for key, val := range data {
-		fmt.Printf("  %s: %.2f\n", key, math.Round(val*10)/10)
+	err := printTable(data, config)
+	if err != nil {
+		return err
 	}
 
 	// Do not publish until we're ready.
 	if config.SkipPublish {
-		fmt.Println("Skipping.")
+		fmt.Println("You have elected to not publish these metrics, exiting...")
 		return nil
 	}
 
@@ -141,6 +181,7 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 }
 
 func main() {
+	kingpin.Parse()
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
