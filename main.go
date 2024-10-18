@@ -1,12 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
-	"github.com/pterm/pterm"
 	"log"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
+	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v2"
 )
 
@@ -171,13 +173,43 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 		MetricData: metricData,
 	}
 
-	_, err = client.PutMetricData(context.TODO(), input)
-	if err != nil {
-		return err
+	if confirm("Do you want to proceed?") {
+		_, err = client.PutMetricData(context.TODO(), input)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Metrics published successfully!")
+	} else {
+		fmt.Println("Operation cancelled.")
 	}
 
-	fmt.Println("Metrics published successfully!")
 	return nil
+}
+
+// confirm will accept input for a prompt.
+func confirm(prompt string) bool {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("%s [y/n]: ", prompt)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			return false
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		switch response {
+		case "y", "yes":
+			return true
+		case "n", "no":
+			return false
+		default:
+			fmt.Println("Invalid input. Please enter 'y' or 'n'.")
+		}
+	}
 }
 
 func main() {
