@@ -124,16 +124,16 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 			Timestamp:  aws.Time(time.Now()),
 			Unit:       types.StandardUnitCount,
 		})
-	}
 
-	input := &cloudwatch.PutMetricDataInput{
-		Namespace:  aws.String(config.MetricNamespace),
-		MetricData: metricData,
-	}
+		input := &cloudwatch.PutMetricDataInput{
+			Namespace:  aws.String(config.MetricNamespace),
+			MetricData: metricData,
+		}
 
-	_, err := client.PutMetricData(context.TODO(), input)
-	if err != nil {
-		return err
+		_, err := client.PutMetricData(context.TODO(), input)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Println("Metrics published successfully!")
