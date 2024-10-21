@@ -45,9 +45,11 @@ profile: my-aws-profile
 metricNamespace: Personal/Performance
 skipPublish: false
 metricMappings:
-  steps: DailySteps
-  calories: CaloriesBurned
-  your-metric-here: MyCustomMetricName
+  your-metric-here:
+    name: MyCustomMetricName
+    dimensions:
+      - name: Goal
+        value: Fitness
 ```
 
 ### Set up the data file
@@ -56,8 +58,6 @@ Matching up the data to the defined data set above, you can now identify the met
 AWS account before pushing them.
 
 ```yaml
-steps: 1
-calories: 0.5
 your-metric-here: 100
 ```
 

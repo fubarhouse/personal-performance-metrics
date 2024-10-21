@@ -16,16 +16,28 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"github.com/pterm/pterm"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Config provides global configuration
 type Config struct {
-	Region          string            `yaml:"region"`
-	Profile         string            `yaml:"profile"`
-	SkipPublish     bool              `yaml:"skipPublish"`
-	MetricNamespace string            `yaml:"metricNamespace"`
-	MetricMappings  map[string]string `yaml:"metricMappings"`
+	Region          string                   `yaml:"region"`
+	Profile         string                   `yaml:"profile"`
+	SkipPublish     bool                     `yaml:"skipPublish"`
+	MetricNamespace string                   `yaml:"metricNamespace"`
+	MetricMappings  map[string]MetricMapping `yaml:"metricMappings"`
+}
+
+// MetricMapping is the configuration data for the metrics.
+type MetricMapping struct {
+	Name       string                    `yaml:"name"`
+	Dimensions []MetricMappingDimensions `yaml:"dimensions"`
+}
+
+// MetricMappingDimensions is the definition for the dimensions associated to the metric.
+type MetricMappingDimensions struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
 }
 
 // PerformanceData is the data being captured and sent to AWS.
@@ -41,7 +53,7 @@ var (
 // run will execute the main logic component for error handling.
 func run() error {
 
-	configInput, err := loadConfig("config.yml")
+	configInput, err := loadConfig()
 	if err != nil {
 		return err
 	}
@@ -64,7 +76,7 @@ func run() error {
 		configInput.SkipPublish = true
 	}
 
-	dataInput, err := loadData("data.yml")
+	dataInput, err := loadData()
 	if err != nil {
 		return err
 	}
@@ -102,20 +114,20 @@ func run() error {
 }
 
 // loadConfig will load the configuration file.
-func loadConfig(filename string) (Config, error) {
-	var config Config
-	file, err := os.ReadFile(filename)
+func loadConfig() (Config, error) {
+	var cfg Config
+	file, err := os.ReadFile("config.yml")
 	if err != nil {
-		return config, err
+		return cfg, err
 	}
-	err = yaml.Unmarshal(file, &config)
-	return config, err
+	err = yaml.Unmarshal(file, &cfg)
+	return cfg, err
 }
 
 // lodaData will load the data file.
-func loadData(filename string) (PerformanceData, error) {
+func loadData() (PerformanceData, error) {
 	var data PerformanceData
-	file, err := os.ReadFile(filename)
+	file, err := os.ReadFile("data.yml")
 	if err != nil {
 		return data, err
 	}
@@ -123,15 +135,20 @@ func loadData(filename string) (PerformanceData, error) {
 	return data, err
 }
 
-// printTable will print a table showing all of the metrics which are going to be pushed.
+// printTable will print a table showing all the metrics which are going to be pushed.
 func printTable(data PerformanceData, config Config) error {
 	alternateStyle := pterm.NewStyle(pterm.BgDarkGray)
 	tableData := pterm.TableData{
-		{"Metric name", "Value"},
+		{"Metric name", "Value", "Dimensions"},
 	}
+	fmt.Sprint(alternateStyle, tableData)
 
 	for key, val := range data {
-		tableData = append(tableData, []string{config.MetricMappings[key], fmt.Sprint(math.Round(val*100) / 100)})
+		var dimensions string
+		for _, v := range config.MetricMappings[key].Dimensions {
+			dimensions += fmt.Sprintf("%s=%s ", v.Name, v.Value)
+		}
+		tableData = append(tableData, []string{config.MetricMappings[key].Name, fmt.Sprint(math.Round(val*100) / 100), dimensions})
 	}
 
 	fmt.Println("Metrics to be published:")
@@ -154,19 +171,27 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 	var metricData []types.MetricDatum
 
 	for key, value := range data {
-		metricName, ok := config.MetricMappings[key]
+		metric, ok := config.MetricMappings[key]
 		if !ok {
 			continue
 		}
 
 		metricValue := math.Round(value*100) / 100
-
-		metricData = append(metricData, types.MetricDatum{
-			MetricName: aws.String(metricName),
+		metricDatum := types.MetricDatum{
+			MetricName: aws.String(metric.Name),
 			Value:      aws.Float64(metricValue),
 			Timestamp:  aws.Time(time.Now()),
 			Unit:       types.StandardUnitCount,
-		})
+		}
+
+		for _, dimension := range metric.Dimensions {
+			metricDatum.Dimensions = append(metricDatum.Dimensions, types.Dimension{
+				Name:  &dimension.Name,
+				Value: &dimension.Value,
+			})
+		}
+
+		metricData = append(metricData, metricDatum)
 	}
 
 	input := &cloudwatch.PutMetricDataInput{
