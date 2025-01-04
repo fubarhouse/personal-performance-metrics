@@ -157,7 +157,16 @@ func printTable(data PerformanceData, config Config) error {
 
 // publishMetrics will publish the metrics to the nominated AWS account.
 func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Config) error {
-	err := printTable(data, config)
+
+	// Cleaning the data from empty entries.
+	filteredData := make(PerformanceData)
+	for key, value := range data {
+		if config.MetricMappings[key].Name != "" {
+			filteredData[key] = value
+		}
+	}
+
+	err := printTable(filteredData, config)
 	if err != nil {
 		return err
 	}
@@ -170,7 +179,7 @@ func publishMetrics(client *cloudwatch.Client, data PerformanceData, config Conf
 
 	var metricData []types.MetricDatum
 
-	for key, value := range data {
+	for key, value := range filteredData {
 		metric, ok := config.MetricMappings[key]
 		if !ok {
 			continue
