@@ -23,6 +23,8 @@ var (
 // run will execute the main logic component for error handling.
 func run() error {
 
+	ctx := context.Background()
+
 	configInput, err := config.LoadConfig(nil)
 	if err != nil {
 		return err
@@ -69,7 +71,7 @@ func run() error {
 	}
 
 	// Load AWS configuration
-	cfg, err := awsConfig.LoadDefaultConfig(context.TODO(), opts...)
+	cfg, err := awsConfig.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		fmt.Println("Error creating AWS config:", err)
 		return err

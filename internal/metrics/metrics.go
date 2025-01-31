@@ -29,8 +29,7 @@ func Filter(config types.Config, data types.PerformanceData) types.PerformanceDa
 }
 
 func Print(config types.Config, data types.PerformanceData) error {
-	response := render.PrintTable(data, config)
-	return response
+	return render.PrintTable(data, config)
 }
 
 func Process(config types.Config, data types.PerformanceData) ([]cloudwatchtypes.MetricDatum, error) {
@@ -91,7 +90,7 @@ func Publish(client *cloudwatch.Client, data []cloudwatchtypes.MetricDatum, conf
 	return nil
 }
 
-func Sort(config types.Config) {
+func Sort(config types.Config) []string {
 	// Get our keys, so that we can sort the data.
 	keys := make([]string, 0, len(config.MetricMappings))
 	for k := range config.MetricMappings {
@@ -100,4 +99,7 @@ func Sort(config types.Config) {
 
 	// Sort the data.
 	slices.Sort(keys)
+
+	// Return the sorted array
+	return keys
 }

@@ -15,7 +15,7 @@ func PrintTable(data types.PerformanceData, config types.Config) error {
 	tableData := pterm.TableData{
 		{"Metric name", "Value", "Dimensions", "Machine Name"},
 	}
-	
+
 	for key, val := range data {
 		var dimensions string
 		for _, v := range config.MetricMappings[key].Dimensions {
@@ -24,6 +24,6 @@ func PrintTable(data types.PerformanceData, config types.Config) error {
 		tableData = append(tableData, []string{config.MetricMappings[key].Name, fmt.Sprint(math.Round(val*100) / 100), dimensions, key})
 	}
 
-	fmt.Println("Metrics to be published:")
+	//fmt.Println("Metrics to be published:")
 	return pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(tableData).WithStyle(alternateStyle).Render()
 }

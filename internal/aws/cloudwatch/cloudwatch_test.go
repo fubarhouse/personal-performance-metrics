@@ -41,5 +41,5 @@ func TestPutMetricData(t *testing.T) {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
-	// Add more assertions
+	// TODO assertions
 }
