@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	datetime "github.com/fubarhouse/personal-performance-metrics/internal/time"
 	"math"
 	"slices"
 	"time"
@@ -48,6 +49,14 @@ func Process(config types.Config, data types.PerformanceData) ([]cloudwatchtypes
 			Value:      aws.Float64(metricValue),
 			Timestamp:  aws.Time(time.Now()),
 			Unit:       cloudwatchtypes.StandardUnitCount,
+		}
+
+		// Handle timestamps if provided.
+		if metric.Timestamp != "" {
+			t, check := datetime.ParseTimeString(config.MetricMappings[key].Timestamp)
+			if check {
+				metricDatum.Timestamp = aws.Time(t)
+			}
 		}
 
 		for _, dimension := range metric.Dimensions {

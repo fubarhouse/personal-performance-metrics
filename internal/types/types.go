@@ -14,6 +14,7 @@ type Config struct {
 type MetricMapping struct {
 	Name       string                    `yaml:"name"`
 	Dimensions []MetricMappingDimensions `yaml:"dimensions"`
+	Timestamp  string                    `yaml:"timestamp"`
 }
 
 // MetricMappingDimensions is the definition for the dimensions associated to the metric.

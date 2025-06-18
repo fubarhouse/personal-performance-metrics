@@ -6,6 +6,7 @@ import (
 
 	"github.com/pterm/pterm"
 
+	datetime "github.com/fubarhouse/personal-performance-metrics/internal/time"
 	"github.com/fubarhouse/personal-performance-metrics/internal/types"
 )
 
@@ -13,7 +14,7 @@ import (
 func PrintTable(data types.PerformanceData, config types.Config) error {
 	alternateStyle := pterm.NewStyle(pterm.BgDarkGray)
 	tableData := pterm.TableData{
-		{"Metric name", "Value", "Dimensions", "Machine Name"},
+		{"Metric name", "Value", "Dimensions", "Machine Name", "Timestamp (unix)"},
 	}
 
 	for key, val := range data {
@@ -21,7 +22,8 @@ func PrintTable(data types.PerformanceData, config types.Config) error {
 		for _, v := range config.MetricMappings[key].Dimensions {
 			dimensions += fmt.Sprintf("%s=%s ", v.Name, v.Value)
 		}
-		tableData = append(tableData, []string{config.MetricMappings[key].Name, fmt.Sprint(math.Round(val*100) / 100), dimensions, key})
+		datetimeCalculated, _ := datetime.ParseTimeString(config.MetricMappings[key].Timestamp)
+		tableData = append(tableData, []string{config.MetricMappings[key].Name, fmt.Sprint(math.Round(val*100) / 100), dimensions, key, datetimeCalculated.String()})
 	}
 
 	//fmt.Println("Metrics to be published:")

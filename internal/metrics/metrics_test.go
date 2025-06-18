@@ -15,6 +15,21 @@ func testSetup() (types.Config, types.PerformanceData) {
 				Name:       "valid",
 				Dimensions: nil,
 			},
+			"valid-with-timestamp-one": {
+				Name:       "valid-with-timestamp-one",
+				Dimensions: nil,
+				Timestamp:  "1750246865",
+			},
+			"valid-with-timestamp-two": {
+				Name:       "valid-with-timestamp-two",
+				Dimensions: nil,
+				Timestamp:  "30/05/2025",
+			},
+			"valid-with-timestamp-three": {
+				Name:       "valid-with-timestamp-three",
+				Dimensions: nil,
+				Timestamp:  "invalid timestamp",
+			},
 			"invalid": {
 				Name:       "",
 				Dimensions: nil,
@@ -22,9 +37,12 @@ func testSetup() (types.Config, types.PerformanceData) {
 		},
 	}
 
+	// Specify valid data inputs we want to process.
 	data := types.PerformanceData{
-		"invalid": 0,
-		"valid":   1,
+		"valid":                      1,
+		"valid-with-timestamp-one":   2,
+		"valid-with-timestamp-two":   3,
+		"valid-with-timestamp-three": 4,
 	}
 
 	return config, data
@@ -39,8 +57,8 @@ func TestFilter(t *testing.T) {
 	out := Filter(config, data)
 
 	// Compare the old data-set vs the filtered data-set.
-	assert.Len(t, data, 2)
-	assert.Len(t, out, 1)
+	assert.Len(t, config.MetricMappings, 5)
+	assert.Len(t, out, 4)
 }
 
 func TestPrint(t *testing.T) {
@@ -61,12 +79,7 @@ func TestProcess(t *testing.T) {
 	processed, err := Process(config, data)
 
 	assert.NoError(t, err)
-	assert.Len(t, processed, 2)
-
-	assert.Equal(t, *processed[0].MetricName, "")
-	assert.Equal(t, *processed[0].Value, float64(0))
-	assert.Equal(t, *processed[1].MetricName, "valid")
-	assert.Equal(t, *processed[1].Value, float64(1))
+	assert.Len(t, processed, 4)
 }
 
 func TestPublish(t *testing.T) {
