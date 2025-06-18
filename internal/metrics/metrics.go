@@ -53,7 +53,7 @@ func Process(config types.Config, data types.PerformanceData) ([]cloudwatchtypes
 
 		// Handle timestamps if provided.
 		if metric.Timestamp != "" {
-			t, check := datetime.ParseTimeString(config.MetricMappings[key].Timestamp)
+			t, check, _ := datetime.ParseTimeString(config.MetricMappings[key].Timestamp)
 			if check {
 				metricDatum.Timestamp = aws.Time(t)
 			}
